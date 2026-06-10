@@ -1,0 +1,41 @@
+---
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Create document root
+  file:
+    path: "/var/www/{{ vhost_name }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+
+- name: Deploy index.html
+  template:
+    src: index.html.j2
+    dest: "/var/www/{{ vhost_name }}/index.html"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+
+- name: Deploy nginx vhost config
+  template:
+    src: vhost.conf.j2
+    dest: "/etc/nginx/sites-available/{{ vhost_name }}"
+  notify: Restart nginx
+
+- name: Enable vhost
+  file:
+    src: "/etc/nginx/sites-available/{{ vhost_name }}"
+    dest: "/etc/nginx/sites-enabled/{{ vhost_name }}"
+    state: link
+  notify: Restart nginx
+
+- name: Disable default site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Restart nginx
